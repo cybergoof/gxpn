@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  attacker:
+    image: phusion/baseimage
+    container_name: attacker
+    hostname: attacker
+    links:
+    - victim
+    entrypoint:
+    - /sbin/my_init
+  
+  victim:
+    image: keto/ssh
+    container_name: victim
+    hostname: victim
+    environment:
+      SSH_PASSWORD: "mypassword"

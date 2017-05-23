@@ -1,0 +1,81 @@
+version: '2.1'
+
+services:
+  attacker:
+    build: ./attacker.lab2
+    container_name: attacker
+    ports:
+    - "443:443"
+    - "22:2222"
+    hostname: attacker
+    extra_hosts:
+    - "pivot:172.16.200.11"
+    - "target1:172.16.201.12"
+    - "target2:172.16.201.13"
+    
+    networks:
+      DMX-net:
+        ipv4_address: 172.16.200.10
+
+  pivot:
+    image: keto/ssh
+    container_name: pivot
+    hostname: pivot
+    environment:
+      SSH_PASSWORD: "mypassword"      
+    extra_hosts:
+    - "attacker:172.16.200.10"
+    - "target1:172.16.201.12"
+    - "target2:172.16.201.13"
+    networks:
+      DMX-net:
+        ipv4_address: 172.16.200.11
+      target-net:
+        ipv4_address: 172.16.201.11
+
+  target1:
+    image: wpscanteam/vulnerablewordpress
+
+    container_name: target1
+    hostname: target1
+    extra_hosts:
+    - "pivot:172.16.201.11"
+    - "target2:172.16.201.13" 
+    ports:
+    - "80:80"
+    - "3306:3306"       
+    networks:
+      target-net:
+        ipv4_address: 172.16.201.12
+        
+  target2:
+    build: ./target2
+    container_name: target2
+    hostname: target2
+    extra_hosts:
+    - "pivot:172.16.201.11"
+    - "target1:172.16.201.12"
+    networks:
+      target-net:
+        ipv4_address: 172.16.201.13
+  
+
+networks:
+  DMX-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.16.200.0/24
+        gateway: 172.16.200.3
+  target-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.16.201.0/24
+        gateway: 172.16.201.3
